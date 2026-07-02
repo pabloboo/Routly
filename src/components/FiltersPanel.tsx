@@ -1,29 +1,48 @@
+import { useMemo } from 'react'
 import useRouteStore from '../store'
 import type { RouteType } from '../types'
 
 interface FiltersPanelProps {
   onGenerate: () => void
-  onGenerateMore: () => void
   isGenerating: boolean
-  hasRoutes: boolean
 }
 
-const routeOptions: Array<{ value: RouteType; label: string; description: string }> = [
-  { value: 'circular', label: 'Circular', description: 'Vuelve al punto de inicio o cerca de él.' },
-  { value: 'out-and-back', label: 'Ida y vuelta', description: 'Va y regresa por el mismo camino.' },
-  { value: 'different-out-and-back', label: 'Ida y vuelta distinto', description: 'Vuelve por una trayectoria diferente.' },
-  { value: 'linear', label: 'Lineal', description: 'Una sola dirección desde el punto de salida.' },
+const routeOptions: Array<{ value: RouteType; icon: string; label: string; description: string }> = [
+  { value: 'circular', icon: '↻', label: 'Circular', description: 'Vuelves al inicio' },
+  { value: 'out-and-back', icon: '⇄', label: 'Ida y vuelta', description: 'Mismo camino' },
+  { value: 'different-out-and-back', icon: '⤴', label: 'Alternativa', description: 'Vuelta distinta' },
+  { value: 'linear', icon: '→', label: 'Lineal', description: 'Sin volver al origen' },
 ]
 
-export default function FiltersPanel({ onGenerate, onGenerateMore, isGenerating, hasRoutes }: FiltersPanelProps) {
+const terrainOptions = [
+  { value: 'flat', icon: '─', label: 'Llano' },
+  { value: 'moderate', icon: '↗', label: 'Moderado' },
+  { value: 'hard', icon: '⬆', label: 'Exigente' },
+]
+
+function formatEstimate(distance: number) {
+  const totalMinutes = Math.round(distance * 6)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (hours > 0) {
+    return `~${hours}h ${String(minutes).padStart(2, '0')}min a ritmo moderado · 6 min/km`
+  }
+
+  return `~${minutes} min a ritmo moderado · 6 min/km`
+}
+
+export default function FiltersPanel({ onGenerate, isGenerating }: FiltersPanelProps) {
   const { filters, setFilters, resetFilters } = useRouteStore()
+
+  const elevationVisible = filters.terrain !== 'flat'
+  const timeEstimate = useMemo(() => formatEstimate(filters.distance), [filters.distance])
 
   return (
     <div className="space-y-6 rounded-[32px] border border-slate-200 bg-white/95 p-5 shadow-xl backdrop-blur">
       <div className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Controles</p>
-        <h2 className="text-2xl font-semibold text-slate-900">Ajusta tu ruta</h2>
-        <p className="text-sm text-slate-500">Elige el tipo, distancia y perfil para crear rutas reales con OSRM.</p>
+        <h2 className="text-2xl font-semibold text-slate-900">Tu ruta</h2>
+        <p className="text-sm text-slate-500">Elige cómo quieres correr hoy</p>
       </div>
 
       <div className="space-y-5 rounded-3xl bg-slate-50 p-4">
@@ -35,125 +54,106 @@ export default function FiltersPanel({ onGenerate, onGenerateMore, isGenerating,
                 type="button"
                 key={option.value}
                 onClick={() => setFilters({ type: option.value })}
-                className={`rounded-3xl border px-4 py-3 text-left transition ${filters.type === option.value ? 'border-sky-500 bg-white shadow-sm' : 'border-slate-200 bg-transparent hover:border-slate-300'}`}
+                className={`rounded-3xl border px-4 py-4 text-left transition ${filters.type === option.value ? 'border-sky-500 bg-white shadow-sm' : 'border-slate-200 bg-transparent hover:border-slate-300'}`}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-slate-900">{option.label}</span>
-                  {filters.type === option.value && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">Activo</span>}
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-3xl bg-slate-100 text-lg text-slate-700">{option.icon}</span>
+                  <div>
+                    <p className={`font-medium ${filters.type === option.value ? 'text-sky-700' : 'text-slate-900'}`}>{option.label}</p>
+                    <p className="mt-1 text-sm text-slate-500">{option.description}</p>
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-slate-500">{option.description}</p>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-2">
-            <div className="flex items-center justify-between gap-4 text-sm font-medium text-slate-900">
-              <span>Distancia objetivo</span>
-              <span>{filters.distance.toFixed(1)} km</span>
+        <div className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-slate-900">Distancia</p>
+              <p className="text-xs text-slate-500">{timeEstimate}</p>
             </div>
-            <input
-              type="range"
-              min="1"
-              max="42"
-              step="0.5"
-              value={filters.distance}
-              onChange={(event) => setFilters({ distance: Number(event.target.value) })}
-              className="w-full accent-sky-500"
-            />
-            <input
-              type="number"
-              min="1"
-              max="42"
-              step="0.5"
-              value={filters.distance}
-              onChange={(event) => setFilters({ distance: Number(event.target.value) || 1 })}
-              className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-            />
-          </label>
+            <p className="text-2xl font-semibold text-slate-900">{filters.distance.toFixed(1)} km</p>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="42"
+            step="0.5"
+            value={filters.distance}
+            onChange={(event) => setFilters({ distance: Number(event.target.value) })}
+            className="w-full accent-sky-500"
+          />
+        </div>
 
-          <label className="space-y-2">
-            <div className="flex items-center justify-between gap-4 text-sm font-medium text-slate-900">
-              <span>Elevación máxima</span>
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">Terreno</p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {terrainOptions.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                onClick={() => setFilters({ terrain: option.value as any })}
+                className={`rounded-3xl border px-3 py-4 text-center transition ${filters.terrain === option.value ? 'border-sky-500 bg-white text-sky-700 shadow-sm' : 'border-slate-200 bg-transparent text-slate-700 hover:border-slate-300'}`}
+              >
+                <div className="mb-1 text-lg">{option.icon}</div>
+                <p className="text-sm font-medium">{option.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {elevationVisible && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm font-medium text-slate-900">
+              <span>Desnivel máximo</span>
               <span>{filters.maxElevation} m</span>
             </div>
             <input
               type="range"
-              min="0"
-              max="1200"
+              min="50"
+              max="1500"
               step="25"
               value={filters.maxElevation}
               onChange={(event) => setFilters({ maxElevation: Number(event.target.value) })}
               className="w-full accent-sky-500"
             />
-            <input
-              type="number"
-              min="0"
-              max="1200"
-              step="25"
-              value={filters.maxElevation}
-              onChange={(event) => setFilters({ maxElevation: Number(event.target.value) || 0 })}
-              className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-            />
-            <p className="text-xs text-slate-500">Si "Mayormente plano" está activo, se prioriza menor desnivel aunque el límite exacto pueda relajarse.</p>
-          </label>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-4 py-4">
+          <div>
+            <p className="font-medium text-slate-900">Sin calles repetidas</p>
+            <p className="text-sm text-slate-500">Evita repetir el mismo camino.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilters({ avoidRepeats: !filters.avoidRepeats })}
+            className={`inline-flex h-10 w-16 items-center rounded-full p-1 transition ${filters.avoidRepeats ? 'bg-sky-600' : 'bg-slate-300'}`}
+          >
+            <span className={`inline-block h-8 w-8 rounded-full bg-white shadow transition ${filters.avoidRepeats ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex cursor-pointer items-center gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 transition hover:border-slate-300">
-            <input
-              type="checkbox"
-              checked={filters.avoidRepeats}
-              onChange={(event) => setFilters({ avoidRepeats: event.target.checked })}
-              className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-            />
-            <div>
-              <p className="font-medium text-slate-900">No repetir tramos</p>
-              <p className="text-sm text-slate-500">Prioriza rutas con menor coincidencia de calles.</p>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 transition hover:border-slate-300">
-            <input
-              type="checkbox"
-              checked={filters.mostlyFlat}
-              onChange={(event) => setFilters({ mostlyFlat: event.target.checked })}
-              className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-            />
-            <div>
-              <p className="font-medium text-slate-900">Recorrido mayormente plano</p>
-              <p className="text-sm text-slate-500">Reduce la ganancia de elevación cuando sea posible.</p>
-            </div>
-          </label>
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700"
+          >
+            Restablecer filtros
+          </button>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          disabled={isGenerating}
-          onClick={onGenerate}
-          className="inline-flex justify-center rounded-3xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          {isGenerating ? 'Generando rutas...' : 'Generar rutas'}
-        </button>
-        <button
-          type="button"
-          disabled={!hasRoutes || isGenerating}
-          onClick={onGenerateMore}
-          className="inline-flex justify-center rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:text-slate-400"
-        >
-          Generar más alternativas
-        </button>
       </div>
 
       <button
         type="button"
-        onClick={resetFilters}
-        className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+        disabled={isGenerating}
+        onClick={onGenerate}
+        className="w-full rounded-3xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
       >
-        Restablecer filtros
+        {isGenerating ? 'Generando rutas...' : 'Generar rutas'}
       </button>
     </div>
   )

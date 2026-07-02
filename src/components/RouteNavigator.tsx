@@ -7,9 +7,11 @@ interface RouteNavigatorProps {
   total: number
   onPrevious: () => void
   onNext: () => void
+  onGenerateMore: () => void
+  isGenerating: boolean
 }
 
-export default function RouteNavigator({ route, index, total, onPrevious, onNext }: RouteNavigatorProps) {
+export default function RouteNavigator({ route, index, total, onPrevious, onNext, onGenerateMore, isGenerating }: RouteNavigatorProps) {
   const googleMapsUrl = buildGoogleMapsUrl(route.coords)
   const gpxUrl = createGpxDownloadUrl(route.coords)
 
@@ -57,7 +59,7 @@ export default function RouteNavigator({ route, index, total, onPrevious, onNext
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <a
           href={googleMapsUrl}
           target="_blank"
@@ -73,6 +75,14 @@ export default function RouteNavigator({ route, index, total, onPrevious, onNext
         >
           Descargar GPX
         </a>
+        <button
+          type="button"
+          onClick={onGenerateMore}
+          disabled={isGenerating}
+          className="inline-flex justify-center rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          {isGenerating ? 'Generando...' : 'Generar más alternativas'}
+        </button>
       </div>
     </div>
   )

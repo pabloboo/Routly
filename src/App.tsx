@@ -62,7 +62,7 @@ function App() {
               <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm font-medium text-slate-900">Punto de partida</p>
                 {origin ? (
-                  <p className="mt-2 text-sm text-slate-600">Lat: {origin[0].toFixed(5)}, Lon: {origin[1].toFixed(5)}</p>
+                  <p className="mt-2 text-sm text-slate-600">Punto seleccionado para generar una ruta desde aquí.</p>
                 ) : (
                   <p className="mt-2 text-sm text-slate-600">Usa el buscador o toca el mapa para elegir un punto.</p>
                 )}
@@ -71,9 +71,7 @@ function App() {
 
             <FiltersPanel
               onGenerate={handleGenerate}
-              onGenerateMore={handleGenerateMore}
               isGenerating={loading}
-              hasRoutes={hasRoutes}
             />
 
             {error && (
@@ -89,6 +87,8 @@ function App() {
                 total={routes.length}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
+                onGenerateMore={handleGenerateMore}
+                isGenerating={loading}
               />
             )}
           </div>

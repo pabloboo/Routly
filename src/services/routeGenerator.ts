@@ -28,8 +28,9 @@ export async function generateRouteCandidates(
       const route = await osrmRoute(waypoints)
       const elevation = await fetchElevationProfile(route.coords)
       const deviation = Math.abs(route.distance - targetMeters) / targetMeters
+      const effectiveElevationLimit = filters.terrain === 'flat' ? 150 : filters.maxElevation
       const isTooFar = deviation > MAX_ROUTE_DEVIATION
-      const isTooSteep = filters.maxElevation > 0 && elevation.gain > filters.maxElevation
+      const isTooSteep = effectiveElevationLimit > 0 && elevation.gain > effectiveElevationLimit
 
       if (isTooFar || isTooSteep) {
         rawCandidates.push({
@@ -145,10 +146,7 @@ function toDegrees(value: number): number {
 }
 
 function scoreRoute(route: RouteCandidate, filters: RouteFilters): number {
-  const deviationScore = route.deviation
-  const elevationPenalty = filters.mostlyFlat ? Math.max(0, route.elevationGain - 100) / 1000 : 0
-  const repeatPenalty = filters.avoidRepeats && route.type === 'circular' ? 0 : 0
-  return deviationScore + elevationPenalty + repeatPenalty
+  return route.deviation
 }
 
 function buildDeviationNote(distance: number, targetMeters: number, elevationGain: number): string {

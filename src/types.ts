@@ -2,12 +2,14 @@ export type LatLng = [number, number]
 
 export type RouteType = 'circular' | 'out-and-back' | 'different-out-and-back' | 'linear'
 
+export type TerrainType = 'flat' | 'moderate' | 'hard'
+
 export interface RouteFilters {
   type: RouteType
   distance: number
   avoidRepeats: boolean
+  terrain: TerrainType
   maxElevation: number
-  mostlyFlat: boolean
 }
 
 export interface RouteCandidate {

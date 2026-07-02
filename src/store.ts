@@ -5,8 +5,8 @@ const defaultFilters: RouteFilters = {
   type: 'circular',
   distance: 8,
   avoidRepeats: false,
-  maxElevation: 400,
-  mostlyFlat: false,
+  terrain: 'flat',
+  maxElevation: 200,
 }
 
 interface RouteStore {
